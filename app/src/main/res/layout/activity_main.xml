@@ -13,7 +13,7 @@
 
     <ListView
         android:layout_width="fill_parent"
-        android:layout_height="413dp"
+        android:layout_height="311dp"
         android:id="@+id/LvlList" />
 
     <LinearLayout

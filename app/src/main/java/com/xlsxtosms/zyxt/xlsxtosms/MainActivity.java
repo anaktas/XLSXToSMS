@@ -117,6 +117,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     @Override
     public void onClick(View view) {
-        Toast.makeText(this, "Ο φάκελος είναι:  " + selectedFilePath + ", και το αρχείο: " + selectedFileName, Toast.LENGTH_LONG).show();
+        switch (view.getId()) {
+            case R.id.BtnOK:
+                Toast.makeText(this, "OK: Ο φάκελος είναι:  " + selectedFilePath + ", και το αρχείο: " + selectedFileName, Toast.LENGTH_LONG).show();
+                break;
+            case R.id.BtnCancel:
+                Toast.makeText(this, "Cancel: Ο φάκελος είναι:  " + selectedFilePath + ", και το αρχείο: " + selectedFileName, Toast.LENGTH_LONG).show();
+                break;
+        }
     }
 }
