@@ -1,5 +1,7 @@
 package com.xlsxtosms.zyxt.xlsxtosms;
 
+import android.content.Context;
+import android.content.Intent;
 import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -15,7 +17,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 
-public class MainActivity extends AppCompatActivity implements AdapterView.OnItemClickListener, View.OnClickListener{
+public class MainActivity extends AppCompatActivity implements AdapterView.OnItemClickListener{
 
     ListView LvlList;
     ArrayList<String> listItems = new ArrayList<String>();
@@ -35,12 +37,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
         try {
             LvlList = (ListView) findViewById(R.id.LvlList);
-            BtnOK = (Button) findViewById(R.id.BtnOK);
-            BtnCancel = (Button) findViewById(R.id.BtnCancel);
 
             LvlList.setOnItemClickListener(this);
-            BtnOK.setOnClickListener(this);
-            BtnCancel.setOnClickListener(this);
 
             setCurrentPath(Environment.getExternalStorageDirectory().getAbsolutePath() + "/");
         } catch (Exception ex) {
@@ -112,18 +110,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         } else {
             selectedFilePath = currentPath + entryName;
             selectedFileName = entryName;
-        }
-    }
-
-    @Override
-    public void onClick(View view) {
-        switch (view.getId()) {
-            case R.id.BtnOK:
-                Toast.makeText(this, "OK: Ο φάκελος είναι:  " + selectedFilePath + ", και το αρχείο: " + selectedFileName, Toast.LENGTH_LONG).show();
-                break;
-            case R.id.BtnCancel:
-                Toast.makeText(this, "Cancel: Ο φάκελος είναι:  " + selectedFilePath + ", και το αρχείο: " + selectedFileName, Toast.LENGTH_LONG).show();
-                break;
+            Toast.makeText(this, "Παρακαλω περιμενετε...", Toast.LENGTH_LONG).show();
+            Intent intent = new Intent(this, SendingSMSService.class);
+            intent.putExtra(SendingSMSService.PATH_TO_FILE, selectedFilePath);
+            Context context = getApplicationContext();
+            context.startService(intent);
         }
     }
 }

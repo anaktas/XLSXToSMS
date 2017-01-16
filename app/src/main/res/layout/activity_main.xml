@@ -9,31 +9,21 @@
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
     android:orientation="vertical"
-    tools:context="com.xlsxtosms.zyxt.xlsxtosms.MainActivity">
+    tools:context="com.xlsxtosms.zyxt.xlsxtosms.MainActivity"
+    android:weightSum="1">
+
+
 
     <ListView
         android:layout_width="fill_parent"
         android:layout_height="311dp"
-        android:id="@+id/LvlList" />
+        android:id="@+id/LvlList"
+        android:layout_weight="0.71" />
 
     <LinearLayout
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
-
-        <Button
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:id="@+id/BtnOK"
-            android:text="@string/btn_ok"/>
-
-        <Button
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:id="@+id/BtnCancel"
-            android:text="@string/btn_cancel"/>
 
     </LinearLayout>
 </LinearLayout>

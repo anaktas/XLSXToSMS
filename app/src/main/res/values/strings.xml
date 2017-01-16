@@ -1,5 +1,6 @@
 <resources>
-    <string name="app_name">XLSXToSMS</string>
+    <string name="app_name">CSVToSMS</string>
     <string name="btn_ok">OK</string>
     <string name="btn_cancel">Ακύρωση</string>
+    <string name="lbl_txt">Επιλέξτε το κατάλληλο xls αρχείο</string>
 </resources>
