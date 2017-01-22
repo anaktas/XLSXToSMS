@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.telephony.TelephonyManager;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -110,11 +111,19 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         } else {
             selectedFilePath = currentPath + entryName;
             selectedFileName = entryName;
-            Toast.makeText(this, "Παρακαλω περιμενετε...", Toast.LENGTH_LONG).show();
-            Intent intent = new Intent(this, SendingSMSService.class);
-            intent.putExtra(SendingSMSService.PATH_TO_FILE, selectedFilePath);
-            Context context = getApplicationContext();
-            context.startService(intent);
+            if ( (((TelephonyManager)getBaseContext().getSystemService(Context.TELEPHONY_SERVICE)).getPhoneType() == TelephonyManager.PHONE_TYPE_NONE) || (((TelephonyManager)getBaseContext().getSystemService(Context.TELEPHONY_SERVICE)).getLine1Number() == null) ) {
+                Toast.makeText(this, "Ανερπαρκές δίκτυο.", Toast.LENGTH_LONG).show();
+            } else {
+                if (selectedFilePath.endsWith("csv")) {
+                    Toast.makeText(this, "Παρακαλω περιμενετε...", Toast.LENGTH_LONG).show();
+                    Intent intent = new Intent(this, SendingSMSService.class);
+                    intent.putExtra(SendingSMSService.PATH_TO_FILE, selectedFilePath);
+                    Context context = getApplicationContext();
+                    context.startService(intent);
+                } else {
+                    Toast.makeText(this, "Μη υποστηριζόμενος τύπος αρχείου.", Toast.LENGTH_LONG).show();
+                }
+            }
         }
     }
 }

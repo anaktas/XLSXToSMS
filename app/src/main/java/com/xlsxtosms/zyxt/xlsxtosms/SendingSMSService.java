@@ -113,11 +113,25 @@ public class SendingSMSService extends IntentService {
                 String line;
                 int count = 0;
                 while ((line = reader.readLine()) != null) {
-                    String[] RowData = line.split(",");
-                    String message = "Έλεγχος ΕΛΟΓΑΚ " + RowData[1] + "\n";
-                    message += "Λιπαρά: " + RowData[2] + ", Πρωτεϊνες: " + RowData[3] + ", Ο.Μ.Χ.: " + RowData[4] + ", Νοθεία: " + RowData[5];
-                    String receiver = RowData[6];
-                    sendSMS(receiver, message);
+                    if (count != 0) {
+                        try {
+                            String[] RowData = line.split(";");
+                            String message = "Ποιοτικός Έλεγχος ΕΛΟΓΑΚ " + RowData[0] + "\n";
+                            message += "Λίπος: " + RowData[1] + "%, Πρωτεϊνες: " + RowData[2] + "%, Ο.Μ.Χ.: " + RowData[3] + " (x1000), Νοθείες: " + RowData[4] + "%";
+                            String receiver = RowData[6];
+                            sendSMS(receiver, message);
+                        } catch (IndexOutOfBoundsException e) {
+                            Handler handler = new Handler(Looper.getMainLooper());
+                            handler.post(new Runnable() {
+
+                                @Override
+                                public void run() {
+                                    Toast.makeText(getApplicationContext(), "Εσφαλμένη δομή αρχείου!", Toast.LENGTH_LONG).show();
+                                }
+                            });
+                            e.printStackTrace();
+                        }
+                    }
                     count++;
                 }
 
@@ -137,8 +151,21 @@ public class SendingSMSService extends IntentService {
     }
 
     private void sendSMS(final String receiver, String smsText) {
-        SmsManager smsManager = SmsManager.getDefault();
-        smsManager.sendTextMessage(receiver, null, smsText, null, null);
+        try {
+            SmsManager smsManager = SmsManager.getDefault();
+            smsManager.sendTextMessage(receiver, null, smsText, null, null);
+        } catch (Exception e) {
+            final String errorMessage = e.getMessage();
+            Handler handler = new Handler(Looper.getMainLooper());
+            handler.post(new Runnable() {
+
+                @Override
+                public void run() {
+                    Toast.makeText(getApplicationContext(), "Error sendSMS(): " + errorMessage, Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+
         Handler handler = new Handler(Looper.getMainLooper());
         handler.post(new Runnable() {
 
