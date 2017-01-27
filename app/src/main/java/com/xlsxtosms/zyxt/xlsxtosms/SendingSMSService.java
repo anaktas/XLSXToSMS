@@ -1,14 +1,18 @@
 package com.xlsxtosms.zyxt.xlsxtosms;
 
+import android.app.Activity;
 import android.app.IntentService;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.TaskStackBuilder;
+import android.content.BroadcastReceiver;
 import android.content.Intent;
 import android.content.Context;
+import android.content.IntentFilter;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.support.v4.app.NotificationCompat;
 import android.telephony.SmsManager;
 import android.widget.Toast;
@@ -39,7 +43,8 @@ public class SendingSMSService extends IntentService {
 
     public static final String PATH_TO_FILE = "";
 
-    private NotificationManager notifier;
+    private BroadcastReceiver sendingBroadcastReceiver;
+    private BroadcastReceiver deliveringBroadcastReceiver;
 
     public SendingSMSService() {
         super("SendingSMSService");
@@ -90,14 +95,7 @@ public class SendingSMSService extends IntentService {
             }
 
             String path = intent.getStringExtra(PATH_TO_FILE);
-            Handler handler = new Handler(Looper.getMainLooper());
-            handler.post(new Runnable() {
-
-                @Override
-                public void run() {
-                    Toast.makeText(getApplicationContext(), "Ανάγνωση αρχείου...", Toast.LENGTH_LONG).show();
-                }
-            });
+            showToast("Ανάγνωση αρχείου...");
             readCSVFile(path);
         }
     }
@@ -112,23 +110,27 @@ public class SendingSMSService extends IntentService {
 
                 String line;
                 int count = 0;
+                Handler handler = new Handler(Looper.getMainLooper());
                 while ((line = reader.readLine()) != null) {
                     if (count != 0) {
                         try {
                             String[] RowData = line.split(";");
                             String message = "Ποιοτικός Έλεγχος ΕΛΟΓΑΚ " + RowData[0] + "\n";
-                            message += "Λίπος: " + RowData[1] + "%, Πρωτεϊνες: " + RowData[2] + "%, Ο.Μ.Χ.: " + RowData[3] + " (x1000), Νοθείες: " + RowData[4] + "%";
+                            message += "Λίπος: " + RowData[1] + "%, Πρωτεϊνες: " + RowData[2] + "%, Ο.Μ.Χ.: " + RowData[3] + " (x1000), Νοθείες: " + RowData[4];
                             String receiver = RowData[6];
-                            sendSMS(receiver, message);
-                        } catch (IndexOutOfBoundsException e) {
-                            Handler handler = new Handler(Looper.getMainLooper());
-                            handler.post(new Runnable() {
+                            //sendSMS(receiver, message);
+                            //SystemClock.sleep(2000);
+                            final String finalReceiver = receiver;
+                            final String finalMessage = message;
+                            handler.postDelayed(new Runnable() {
 
                                 @Override
                                 public void run() {
-                                    Toast.makeText(getApplicationContext(), "Εσφαλμένη δομή αρχείου!", Toast.LENGTH_LONG).show();
+                                    sendSMS(finalReceiver, finalMessage);
                                 }
-                            });
+                            }, 1000 * count);
+                        } catch (IndexOutOfBoundsException e) {
+                            showToast("Εσφαλμένη δομή αρχείου!");
                             e.printStackTrace();
                         }
                     }
@@ -150,28 +152,82 @@ public class SendingSMSService extends IntentService {
         }
     }
 
-    private void sendSMS(final String receiver, String smsText) {
+    private void sendSMS(String receiver, String smsText) {
+        final String finalReceiver = receiver;
         try {
-            SmsManager smsManager = SmsManager.getDefault();
-            smsManager.sendTextMessage(receiver, null, smsText, null, null);
-        } catch (Exception e) {
-            final String errorMessage = e.getMessage();
-            Handler handler = new Handler(Looper.getMainLooper());
-            handler.post(new Runnable() {
+            String SENT = "SMS_SENT";
+            String DELIVERED = "SMS_DELIVERED";
 
+            PendingIntent sentPI = PendingIntent.getBroadcast(this, 0, new Intent(SENT), 0);
+            PendingIntent deliveredPI = PendingIntent.getBroadcast(this, 0, new Intent(DELIVERED), 0);
+
+            sendingBroadcastReceiver = new BroadcastReceiver() {
                 @Override
-                public void run() {
-                    Toast.makeText(getApplicationContext(), "Error sendSMS(): " + errorMessage, Toast.LENGTH_SHORT).show();
-                }
-            });
-        }
+                public void onReceive(Context arg0, Intent arg1) {
+                    switch (getResultCode())
+                    {
+                        case Activity.RESULT_OK:
+                            showToast("Αποστολη στο: " + finalReceiver);
 
+                            break;
+                        case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
+                            showToast("Γενικό σφάλμα αποστολής");
+                            break;
+                        case SmsManager.RESULT_ERROR_NO_SERVICE:
+                            showToast("Η υπηρεσία ασποστολής SMS δεν είναι διαθέσιμη");
+                            break;
+                        case SmsManager.RESULT_ERROR_NULL_PDU:
+                            showToast("Null PDU");
+                            break;
+                        case SmsManager.RESULT_ERROR_RADIO_OFF:
+                            showToast("Radio off");
+                            break;
+                    }
+
+                    unregisterReceiver(sendingBroadcastReceiver);
+                }
+            };
+
+            deliveringBroadcastReceiver = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context arg0, Intent arg1) {
+                    switch (getResultCode())
+                    {
+                        case Activity.RESULT_OK:
+                            showToast("Απεσταλη στο: " + finalReceiver);
+                            break;
+                        case Activity.RESULT_CANCELED:
+                            showToast("Αποτυχια αποστολης στο: " + finalReceiver);
+                            break;
+                    }
+
+                    unregisterReceiver(deliveringBroadcastReceiver);
+                }
+            };
+
+            registerReceiver(deliveringBroadcastReceiver, new IntentFilter(DELIVERED));
+            registerReceiver(sendingBroadcastReceiver , new IntentFilter(SENT));
+
+            SmsManager smsManager = SmsManager.getDefault();
+            smsManager.sendTextMessage(receiver, null, smsText, sentPI, deliveredPI);
+            //smsManager.sendTextMessage(receiver, null, smsText, null, null);
+            //showToast("Αποστολή στο: " + receiver);
+        } catch (Exception e) {
+            showToast(e.getMessage());
+        }
+//        SmsManager smsManager = SmsManager.getDefault();
+//        smsManager.sendTextMessage(receiver, null, smsText, null, null);
+//        showToast("Αποστολή στο: " + receiver);
+    }
+
+    private void showToast(String text) {
+        final String showedText = text;
         Handler handler = new Handler(Looper.getMainLooper());
         handler.post(new Runnable() {
 
             @Override
             public void run() {
-                Toast.makeText(getApplicationContext(), "Αποστολή στο: " + receiver, Toast.LENGTH_SHORT).show();
+                Toast.makeText(getApplicationContext(), showedText, Toast.LENGTH_SHORT).show();
             }
         });
     }
